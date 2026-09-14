@@ -14,7 +14,7 @@ CrossPoint 是一个**问题驱动、基于标签匹配的多人研讨社交平�
 
 ## 在线体验
 
-- 在线 Demo：**部署完成后在这里填写公网地址**
+- 在线 Demo：<https://crosspoint-mvp-production.up.railway.app/>
 - 演示视频：**完成后在这里填写视频地址（可选）**
 - 产品说明：[docs/product-spec.md](docs/product-spec.md)
 
@@ -461,14 +461,13 @@ pnpm check:full
 - 当前不提供站内私信，只支持双方同意后交换知乎号；
 - 真实知乎 API 默认关闭，尚未完成正式线上联调；
 - OAuth 只保留代码边界，当前产品不使用 OAuth 登录；
-- 当前 Demo 场景面向单次演示，尚未实现生产级多租户隔离；
-- 公网部署完成后，需要在本文顶部补充实际访问地址。
+- 公网 Demo 已部署于 Railway；当前仍是单实例共享演示场景，尚未实现生产级多租户隔离。
 
 ---
 
 ## 下一步计划
 
-- 部署可公开访问的在线 Demo；
+- 持续验证并提升 Railway 公网 Demo 的稳定性与异常恢复能力；
 - 将 SQLite Repository 替换为 Supabase/Postgres；
 - 为不同访客创建相互隔离的研讨场景；
 - 接入对象存储、内容安全和审计日志；
