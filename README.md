@@ -16,6 +16,7 @@ CrossPoint 是一个**问题驱动、基于标签匹配的多人研讨社交平�
 
 - 在线 Demo：<https://crosspoint-mvp-production.up.railway.app/>
 - 演示视频：[观看 / 下载 2 分钟产品演示](docs/crosspoint-demo.mp4)
+- 慢速版本：[观看 / 下载 0.5 倍速演示](docs/crosspoint-demo-0.5x.mp4)
 - 产品说明：[docs/product-spec.md](docs/product-spec.md)
 
 ![CrossPoint 产品封面](docs/images/cover.png)
