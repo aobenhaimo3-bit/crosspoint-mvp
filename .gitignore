@@ -1,0 +1,25 @@
+# dependencies
+/node_modules
+/.pnpm-store
+/.pnp
+.pnp.*
+
+# testing and build
+/coverage
+/.next
+/out
+/test-results
+/playwright-report
+/blob-report
+
+# local data and secrets
+.data/
+.env*
+!.env.example
+*.local
+
+# operating system and tooling
+.DS_Store
+Thumbs.db
+*.tsbuildinfo
+next-env.d.ts
