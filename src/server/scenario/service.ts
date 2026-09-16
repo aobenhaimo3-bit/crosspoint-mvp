@@ -479,6 +479,7 @@ export class ScenarioService {
     return {
       ...safeRecord,
       serverNow: this.now().toISOString(),
+      reconfigurationAllowed: this.isReconfigurable(record.room),
       viewer: { personaId: viewerId, controller: viewerId === controllerId, ...(memberStatus ? { memberStatus } : {}) },
       profiles: record.profiles.map(({ id, displayName, source }) => ({ id, displayName, source })),
       participants: record.profiles.map((profile) => ({
@@ -534,8 +535,17 @@ export class ScenarioService {
     if (!room.members.some((member) => member.userId === userId)) throw new ScenarioError("NOT_MEMBER", "This identity is not invited to the room.", 403);
   }
   private requireReconfigurable(room: Room): void {
+    if (!this.isReconfigurable(room)) {
+      throw new ScenarioError(
+        "TRANSITION_CONFLICT",
+        "本轮已有成员响应或邀请已超时，不能再修改标签或更换问题。切换身份不会重置共享场景；如需从头开始，请由林澈在演示导演台重置场景。",
+        409,
+      );
+    }
+  }
+  private isReconfigurable(room: Room): boolean {
     const untouched = room.state === "WAITING_ACCEPTANCE" && room.revision === 0 && room.positions.length === 0 && room.responses.length === 0;
-    if (!untouched && room.state !== "ENDED" && room.state !== "CANCELLED") throw new ScenarioError("TRANSITION_CONFLICT", "An active or responded-to scenario cannot be reconfigured.", 409);
+    return untouched || room.state === "ENDED" || room.state === "CANCELLED";
   }
   private withInviteStatus(record: ScenarioRecord, userId: string, status: ScenarioInviteStatus): ScenarioRecord {
     return { ...record, invitationStatus: { ...record.invitationStatus, [userId]: status } };

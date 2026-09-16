@@ -20,15 +20,16 @@ function createHarness(id = `scenario-${Math.random().toString(36).slice(2)}`, c
   return { id, repository, service };
 }
 
-function expectScenarioError(action: () => unknown, code: ScenarioErrorCode, status?: number): void {
+function expectScenarioError(action: () => unknown, code: ScenarioErrorCode, status?: number): ScenarioError {
   try {
     action();
-    throw new Error(`Expected ScenarioError ${code}`);
   } catch (error) {
     expect(error).toBeInstanceOf(ScenarioError);
     expect((error as ScenarioError).code).toBe(code);
     if (status !== undefined) expect((error as ScenarioError).status).toBe(status);
+    return error as ScenarioError;
   }
+  throw new Error(`Expected ScenarioError ${code}`);
 }
 
 function acceptAll(service: ScenarioService, id: string, users: readonly PersonaId[] = FOUR_USERS): void {
@@ -71,6 +72,36 @@ describe("CrossPoint scenario acceptance", () => {
       expect(saved.questionConfirmed).toBe(false);
       expect(saved.profiles.find((item) => item.id === "computer")?.displayName).toBe("周屿·标签已确认");
       expectScenarioError(() => service.act(id, "computer", { type: "accept" }), "INVALID_INPUT", 409);
+    } finally {
+      repository.close();
+    }
+  });
+
+  it("keeps responded-to rounds locked with a Chinese recovery message until the director resets", () => {
+    const { id, repository, service } = createHarness();
+    try {
+      service.act(id, "finance", { type:"accept" });
+      const profile = service.ensureDemoScenario(id).profiles.find((item) => item.id === "computer")!;
+      const saveError = expectScenarioError(
+        () => service.act(id, "computer", { type:"saveProfile", profile }),
+        "TRANSITION_CONFLICT",
+        409,
+      );
+      const questionError = expectScenarioError(
+        () => service.act(id, "finance", { type:"chooseQuestion", questionId:"q-ai-major" }),
+        "TRANSITION_CONFLICT",
+        409,
+      );
+
+      expect(saveError.message).toContain("不能再修改标签或更换问题");
+      expect(saveError.message).toContain("切换身份不会重置共享场景");
+      expect(questionError.message).toBe(saveError.message);
+      expect(service.getView(id, "finance").reconfigurationAllowed).toBe(false);
+
+      const reset = service.act(id, "finance", { type:"reset" });
+      expect(reset.reconfigurationAllowed).toBe(true);
+      expect(reset.questionConfirmed).toBe(false);
+      expect(reset.room).toMatchObject({ state:"WAITING_ACCEPTANCE", revision:0, positions:[], responses:[] });
     } finally {
       repository.close();
     }

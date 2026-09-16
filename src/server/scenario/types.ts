@@ -37,6 +37,7 @@ export interface NextRoomRecommendation {
 
 export interface ScenarioView extends Omit<ScenarioRecord, "profiles" | "match" | "room" | "perspectiveMap" | "peerRatings" | "connectionRequests" | "clockAnchoredAt" | "nextRoomRefreshByUser"> {
   serverNow: string;
+  reconfigurationAllowed: boolean;
   viewer: { personaId: string; controller: boolean; memberStatus?: string };
   profiles: readonly { id: string; displayName: string; source: "crosspoint" | "demo" }[];
   participants: readonly {

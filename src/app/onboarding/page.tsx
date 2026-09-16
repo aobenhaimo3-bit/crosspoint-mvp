@@ -7,7 +7,7 @@ import { InterestPicker } from "@/components/interest-picker";
 import { ArrowIcon } from "@/components/icons";
 import { SourceBadge } from "@/components/source-badge";
 import { buildOnboardingProfile, canonicalDemoProfiles, contributeTags, learnTags, perspectiveTags, topicTagGroups } from "@/data/demo";
-import { validateProfileGate } from "@/domain";
+import { validateProfileGate, type RoomState } from "@/domain";
 import { useDemo } from "@/lib/demo/state";
 
 type TagGroupProps = { legend: string; hint: string; items: string[]; selected: string[]; minimum: number; onToggle: (item: string) => void };
@@ -33,9 +33,19 @@ const questionMeta: Record<string, { why: string; lenses: readonly string[]; sou
   "q-skill-proof": { why: "适合连接组织判断、能力证据与机会公平", lenses: ["能力验证", "招聘判断", "机会公平"], source: "知乎 AI 与就业公开讨论素材" },
 };
 
+function continuationFor(state: RoomState): { href: string; label: string; detail: string } {
+  if (state === "WAITING_ACCEPTANCE" || state === "OPEN") {
+    return { href:"/match", label:"继续处理邀请", detail:"当前圆桌还在邀请阶段，请继续接受、拒绝或等待递补。" };
+  }
+  if (state === "INDEPENDENT" || state === "CROSS_RESPONSE") {
+    return { href:"/room", label:"返回 12h 聊天室", detail:"当前圆桌已经开始，请继续完成本阶段的发言。" };
+  }
+  return { href:"/summary", label:"查看会后复盘", detail:"当前圆桌正在收束，请前往复盘页查看状态。" };
+}
+
 export default function OnboardingPage() {
   const router = useRouter();
-  const { state, action, loading, pending, error: apiError } = useDemo();
+  const { state, action, demoEnabled, loading, pending, error: apiError } = useDemo();
   const [view, setView] = useState<"profile" | "questions">("profile");
   const [topics, setTopics] = useState<string[]>([]);
   const [role, setRole] = useState("");
@@ -74,7 +84,32 @@ export default function OnboardingPage() {
     if (chosen) router.push("/match");
   }
 
+  async function resetLockedScenario() {
+    if (!window.confirm("重置共享演示场景？当前邀请、发言和回复进度都会清空，所有标签页将同步重置。")) return;
+    const reset = await action({ type:"reset" });
+    if (!reset) return;
+    setError("");
+    setView("profile");
+    window.scrollTo({ top:0, behavior:"smooth" });
+    router.replace("/onboarding");
+  }
+
   if (loading || !state) return <section className="blocked-state"><span className="eyebrow">SIGNED SESSION</span><h1>正在读取你的标签场景…</h1></section>;
+  if (!state.reconfigurationAllowed) {
+    const continuation = continuationFor(state.room.state);
+    return <section className="blocked-state scenario-lock-state">
+      <span className="eyebrow">ROUND IN PROGRESS · 共享场景已锁定</span>
+      <h1>这轮已经开始，<br/>现在不能重新改题。</h1>
+      <p>{continuation.detail} 已有成员响应后，标签与问题会锁定，避免覆盖其他人的共享进度；切换身份不会解除这个锁。</p>
+      <div className="scenario-lock-actions">
+        <Link href={continuation.href} className="primary-button">{continuation.label}<ArrowIcon/></Link>
+        {demoEnabled && state.viewer.controller
+          ? <button type="button" className="secondary-button" disabled={pending} onClick={() => void resetLockedScenario()}>{pending ? "正在重置…" : "重置并重新设置标签"}</button>
+          : <span className="scenario-lock-note">需要从头演示时，请在右上角导演台切换到林澈；切换后本页会出现重置按钮。</span>}
+      </div>
+      {apiError && <p className="action-error" role="alert">{apiError}</p>}
+    </section>;
+  }
 
   return <div className="onboarding-layout profile-funnel-layout">
     <header className="section-heading full">

@@ -20,9 +20,17 @@ export function DemoShell({ children }: { children: React.ReactNode }) {
   const current = personas.find((persona) => persona.id === currentId) ?? personas[0];
   const routeStep = Math.max(0, steps.findIndex(([href]) => href === pathname));
   const activeStep = routeStep;
+  const configurationLocked = Boolean(state && !state.reconfigurationAllowed);
   return <div className="app-shell">
     <header className="site-header"><Link href="/" className="brand" aria-label="CrossPoint 首页"><CrossMark/><span>CrossPoint</span><em>交点</em></Link><p className="brand-thesis">从标签找到问题，从问题遇见能聊的人。</p>{demoEnabled && <button ref={triggerRef} className="identity-trigger" onClick={() => setOpen(true)} aria-haspopup="dialog" aria-expanded={open} disabled={loading}><PeopleIcon/><span><small>签名 DEMO 身份</small>{loading ? "正在建立会话" : current.role}</span><b>{current.name[0]}</b></button>}</header>
-    <nav className="journey" aria-label="CrossPoint 研讨流程"><ol>{steps.map(([href,label],index) => <li key={href} className={index < activeStep ? "done" : index === activeStep ? "active" : ""}><Link href={href} aria-current={index === activeStep ? "step" : undefined}><span>{index < activeStep ? "✓" : String(index+1).padStart(2,"0")}</span>{label}</Link></li>)}</ol></nav>
+    <nav className="journey" aria-label="CrossPoint 研讨流程"><ol>{steps.map(([href,label],index) => {
+      const locked = href === "/onboarding" && configurationLocked;
+      const className = [index < activeStep ? "done" : index === activeStep ? "active" : "", locked ? "locked" : ""].filter(Boolean).join(" ");
+      const content = <><span>{locked ? "锁" : index < activeStep ? "✓" : String(index+1).padStart(2,"0")}</span>{label}</>;
+      return <li key={href} className={className}>{locked
+        ? <span className="journey-link journey-disabled" role="link" aria-disabled="true" title="本轮已有成员响应，标签和问题已锁定">{content}</span>
+        : <Link className="journey-link" href={href} aria-current={index === activeStep ? "step" : undefined}>{content}</Link>}</li>;
+    })}</ol></nav>
     {error && !open && <div className="global-error" role="alert">{error}</div>}
     <main id="main-content" className="page-frame">{children}</main>
     <footer className="site-footer"><span>CrossPoint MVP · 所有人物均为虚构演示档案</span><span>业务进度保存在服务端场景；本标签页仅保存签名会话</span></footer>
